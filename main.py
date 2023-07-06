@@ -2,7 +2,9 @@ import os
 import time
 from binance.client import Client
 import requests
+from flask import Flask, request
 
+app = Flask(__name__)
 
 api_key = os.getenv("API_KEY")
 api_secret = os.getenv("API_SECRET")
@@ -10,7 +12,6 @@ client = Client(api_key, api_secret)
 
 telegram_token = os.getenv("TELEGRAM_TOKEN")
 chat_id = os.getenv("CHAT_ID")
-print(chat_id)
 
 # Simpan data harga terakhir untuk setiap koin
 last_prices = {}
@@ -33,7 +34,7 @@ def send_telegram_message(message):
 def check_price_changes():
     while True:
         current_time = int(time.time())
-        remaining_seconds = 60 - (current_time % 60)
+        remaining_seconds = 3600 - (current_time % 3600)
 
         # Tunggu sampai close candle 1 menit selesai
         time.sleep(remaining_seconds)
@@ -60,5 +61,11 @@ def check_price_changes():
             send_telegram_message(joined_message)
             price_changes.clear()
 
-# Jalankan fungsi untuk memeriksa perubahan harga
-check_price_changes()
+# Rute untuk menerima webhook dari Binance
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    check_price_changes()
+    return 'OK'
+
+if __name__ == '__main__':
+    app.run()
