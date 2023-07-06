@@ -33,7 +33,7 @@ def send_telegram_message(message):
 def check_price_changes():
     while True:
         current_time = int(time.time())
-        remaining_seconds = 3600 - (current_time % 3600)
+        remaining_seconds = 60 - (current_time % 60)
 
         # Tunggu sampai close candle 1 menit selesai
         time.sleep(remaining_seconds)
