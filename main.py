@@ -2,9 +2,6 @@ import os
 import time
 from binance.client import Client
 import requests
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
 api_key = os.getenv("API_KEY")
