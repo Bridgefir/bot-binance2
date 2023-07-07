@@ -1,6 +1,5 @@
 import os
 import time
-from dotenv import load_dotenv
 from binance.client import Client
 import requests
 from flask import Flask, request
@@ -8,7 +7,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
 
-load_dotenv()
 
 api_key = os.getenv("API_KEY")
 api_secret = os.getenv("API_SECRET")
