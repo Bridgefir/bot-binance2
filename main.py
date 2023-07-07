@@ -1,10 +1,14 @@
 import os
 import time
+from dotenv import load_dotenv
 from binance.client import Client
 import requests
 from flask import Flask, request
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
+
+load_dotenv()
 
 api_key = os.getenv("API_KEY")
 api_secret = os.getenv("API_SECRET")
@@ -32,40 +36,41 @@ def send_telegram_message(message):
 
 # Fungsi untuk memeriksa perubahan harga pada semua koin futures
 def check_price_changes():
-    while True:
-        current_time = int(time.time())
-        remaining_seconds = 60 - (current_time % 60)
+    prices = client.futures_ticker()
 
-        # Tunggu sampai close candle 1 menit selesai
-        time.sleep(remaining_seconds)
+    for price in prices:
+        symbol = price['symbol']
+        last_price = last_prices.get(symbol)
+        current_price = float(price['lastPrice'])
 
-        prices = client.futures_ticker()
+        if last_price is not None and last_price != current_price:
+            # Hitung perubahan persentase
+            change_percentage = ((current_price - last_price) / last_price) * 100
 
-        for price in prices:
-            symbol = price['symbol']
-            last_price = last_prices.get(symbol)
-            current_price = float(price['lastPrice'])
+            message = f'{symbol}: {current_price} ({change_percentage:.2f}%)'
+            price_changes.append(message)
 
-            if last_price is not None and last_price != current_price:
-                # Hitung perubahan persentase
-                change_percentage = ((current_price - last_price) / last_price) * 100
+        last_prices[symbol] = current_price
 
-                message = f'{symbol}: {current_price} ({change_percentage:.2f}%)'
-                price_changes.append(message)
+    # Cek apakah ada perubahan harga yang perlu dikirim
+    if price_changes:
+        joined_message = '\n'.join(price_changes)
+        send_telegram_message(joined_message)
+        price_changes.clear()
 
-            last_prices[symbol] = current_price
-
-        # Cek apakah ada perubahan harga yang perlu dikirim
-        if price_changes:
-            joined_message = '\n'.join(price_changes)
-            send_telegram_message(joined_message)
-            price_changes.clear()
+# Rute untuk halaman utama
+@app.route('/')
+def home():
+    return 'Welcome to the Flask app!'
 
 # Rute untuk menerima webhook dari Binance
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    check_price_changes()
     return 'OK'
 
 if __name__ == '__main__':
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(func=check_price_changes, trigger='interval', seconds=60)
+    scheduler.start()
+
     app.run()
