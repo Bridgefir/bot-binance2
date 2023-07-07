@@ -1,4 +1,4 @@
---upgrade pip
+pip
 requests
 python-binance
 flask
